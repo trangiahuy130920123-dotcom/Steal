@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Steal An Egg 3D</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#0b1220;font-family:Fredoka,system-ui,sans-serif;touch-action:none;user-select:none;position:fixed;inset:0}
+#c{display:block;width:100%;height:100%}
+#ui{position:absolute;inset:0;pointer-events:none;color:#fff}
+#ui *{pointer-events:auto}
+.hud{position:absolute;top:max(10px,env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;z-index:5}
+.chip{background:rgba(15,23,42,.92);border:2px solid #38bdf8;border-radius:12px;padding:6px 11px;font-weight:700;font-size:13px}
+.chip.gold{border-color:#fbbf24;color:#fde68a}
+.chip.green{border-color:#4ade80;color:#bbf7d0}
+.chip.purple{border-color:#a78bfa;color:#ddd6fe}
+#prompt{position:absolute;bottom:105px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);padding:9px 16px;border-radius:12px;font-weight:700;font-size:13px;display:none;border:2px solid #38bdf8;max-width:92vw;z-index:8;text-align:center}
+#toast{position:absolute;top:55px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);padding:9px 16px;border-radius:12px;font-weight:700;display:none;z-index:20;max-width:90vw;text-align:center;border:2px solid #38bdf8}
+#toolbar{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5;flex-wrap:wrap;justify-content:center;max-width:96vw}
+.tb{min-height:46px;border:none;border-radius:12px;background:linear-gradient(180deg,#0ea5e9,#0284c7);color:#e0f2fe;font-weight:800;font-size:12px;cursor:pointer;border:2px solid #38bdf8;font-family:Fredoka,sans-serif;padding:0 12px;box-shadow:0 3px 0 #0c4a6e}
+.tb:active{transform:translateY(2px);box-shadow:0 1px 0 #0c4a6e}
+#start{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,#0ea5e9 0%,#0f172a 45%,#020617 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:40;pointer-events:auto}
+#start h1{font-size:clamp(26px,7vw,44px);color:#e0f2fe;text-shadow:0 4px 0 #0c4a6e}
+#start p{color:#7dd3fc;text-align:center;max-width:340px;line-height:1.45;padding:0 16px;font-size:14px}
+#start button{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#0f172a;border:none;border-radius:16px;padding:14px 42px;font-size:20px;font-weight:900;cursor:pointer;font-family:Fredoka,sans-serif;box-shadow:0 6px 0 #0369a1;pointer-events:auto}
+#start button:active{transform:translateY(3px);box-shadow:0 3px 0 #0369a1}
+#err{color:#f87171;font-size:13px;min-height:18px;text-align:center;padding:0 16px}
+#joy{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:130px;height:130px;display:none;touch-action:none;z-index:6}
+#joy-base{width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12);border:3px solid rgba(56,189,248,.4);position:relative}
+#joy-knob{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#7dd3fc 55%,#0ea5e9);position:absolute;left:37px;top:37px}
+#btnz{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:none;z-index:6}
+.act{width:66px;height:66px;border-radius:50%;border:3px solid #fde68a;background:radial-gradient(circle at 35% 30%,#fbbf24,#d97706);color:#1c1000;font-weight:900;font-size:12px;display:grid;place-items:center;font-family:Fredoka,sans-serif}
+#panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(340px,94vw);max-height:70vh;overflow:auto;background:#1e293b;border:3px solid #38bdf8;border-radius:14px;display:none;z-index:30;color:#fff}
+#panel .hd{display:flex;justify-content:space-between;align-items:center;padding:12px;background:linear-gradient(180deg,#0ea5e9,#0284c7)}
+#panel .hd h2{margin:0;font-size:15px}
+#panel .x{background:#ef4444;border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-weight:900;cursor:pointer}
+#panel .bd{padding:12px}
+#panel .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #334155;font-size:13px;gap:8px}
+#panel .upg{background:#fbbf24;color:#1c1000;border:none;border-radius:8px;padding:7px 10px;font-weight:800;cursor:pointer;font-family:Fredoka,sans-serif}
+#panel .upg:disabled{opacity:.4;cursor:not-allowed}
+#keys{position:absolute;left:10px;bottom:12px;display:none;flex-direction:column;gap:3px;pointer-events:none;z-index:4;font-size:11px;opacity:.75}
+#keys span{background:rgba(0,0,0,.45);border:1px solid #38bdf866;border-radius:7px;padding:2px 7px;width:fit-content}
+kbd{background:#0c4a6e;border:1px solid #38bdf8;border-radius:3px;padding:0 4px;margin-right:3px;font-weight:800}
+@media(max-width:900px),(pointer:coarse){#joy,#btnz{display:flex}#toolbar{bottom:calc(150px + env(safe-area-inset-bottom))}#prompt{bottom:calc(255px + env(safe-area-inset-bottom))}}
+@media(min-width:901px) and (pointer:fine){#keys{display:flex}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div class="hud">
+    <div class="chip" id="c-speed">⚡ 5,000</div>
+    <div class="chip gold" id="c-money">💰 $0</div>
+    <div class="chip green" id="c-pets">🐣 0</div>
+    <div class="chip purple" id="c-tm">🏋️ Lv.1</div>
+  </div>
+  <div id="prompt"></div>
+  <div id="toast"></div>
+  <div id="toolbar">
+    <button class="tb" id="btn-tm">🏋️ Treadmill</button>
+    <button class="tb" id="btn-upg">⬆️ Nâng cấp</button>
+    <button class="tb" id="btn-pets">🐣 Pets</button>
+    <button class="tb" id="btn-base">🏠 Base</button>
+  </div>
+  <div id="joy"><div id="joy-base"><div id="joy-knob"></div></div></div>
+  <div id="btnz"><div class="act" id="btn-act">🥚 E</div></div>
+  <div id="keys">
+    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Di chuyển</span>
+    <span><kbd>E</kbd> Cướp / Ấp</span>
+    <span><kbd>Shift</kbd> Chạy nhanh</span>
+  </div>
+</div>
+<div id="panel">
+  <div class="hd"><h2 id="p-title">Nâng cấp</h2><button class="x" id="p-close">✕</button></div>
+  <div class="bd" id="p-body"></div>
+</div>
+<div id="start">
+  <h1>🥚 Steal An Egg 3D</h1>
+  <p>Cướp trứng, chạy về Base ấp pet.<br>Đứng lên <b>máy chạy bộ</b> để tăng Speed.<br>Nâng cấp máy để tăng nhanh hơn!</p>
+  <button type="button" id="play">▶ Bắt đầu</button>
+  <div id="err"></div>
+</div>
+
+<script>
+(function(){
+  const errEl = document.getElementById('err');
+  function showErr(m){ if(errEl) errEl.textContent = m||''; }
+
+  // ---- Load Three.js ----
+  const CDNS = [
+    'https://unpkg.com/three@0.160.0/build/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js'
+  ];
+  let cdnI = 0;
+  function loadThree(cb){
+    if(window.THREE){ cb(true); return; }
+    if(cdnI >= CDNS.length){ cb(false); return; }
+    const s = document.createElement('script');
+    s.src = CDNS[cdnI++];
+    s.onload = () => cb(!!window.THREE);
+    s.onerror = () => loadThree(cb);
+    document.head.appendChild(s);
+  }
+  loadThree(()=>{});
+
+  // ---- Save / Treadmill upgrades ----
+  // level 1..10: gain per tick, cost to next
+  const TM_UPGRADES = [
+    { lv:1, gain:80,  cost:0 },
+    { lv:2, gain:140, cost:500 },
+    { lv:3, gain:220, cost:2000 },
+    { lv:4, gain:350, cost:8000 },
+    { lv:5, gain:550, cost:25000 },
+    { lv:6, gain:850, cost:80000 },
+    { lv:7, gain:1300,cost:250000 },
+    { lv:8, gain:2000,cost:800000 },
+    { lv:9, gain:3200,cost:2500000 },
+    { lv:10,gain:5000,cost:8000000 },
+  ];
+
+  const BIOMES = [
+    { id:'base', name:'Base', z:0, color:0x4ade80, speed:0, egg:null, income:0, rarity:null, guardian:null },
+    { id:'forest', name:'Forest', z:-28, color:0x22c55e, speed:0, egg:'Chicken Egg', income:8, rarity:'common', guardian:'Chicken' },
+    { id:'lake', name:'Lake', z:-55, color:0x38bdf8, speed:900, egg:'Frog Egg', income:35, rarity:'uncommon', guardian:'Swan' },
+    { id:'desert', name:'Desert', z:-82, color:0xfbbf24, speed:10000, egg:'Jerboa Egg', income:120, rarity:'rare', guardian:'Scorpion' },
+    { id:'ocean', name:'Ocean', z:-110, color:0x1e40af, speed:2500000, egg:'Whale Egg', income:4200, rarity:'legendary', guardian:'Whale' },
+    { id:'volcano', name:'Volcano', z:-140, color:0xef4444, speed:700000, egg:'Cerberus Egg', income:8500, rarity:'legendary', guardian:'Cerberus' },
+    { id:'pre', name:'Prehistoric', z:-170, color:0xf97316, speed:18000000, egg:'T-Rex Egg', income:89121, rarity:'legendary', guardian:'T-Rex' },
+    { id:'temple', name:'Temple', z:-200, color:0xa16207, speed:7000000000, egg:'Gorilla Egg', income:120000000, rarity:'divine', guardian:'Gorilla' },
+    { id:'cherry', name:'Cherry', z:-230, color:0xf9a8d4, speed:2500000000, egg:'Kitsune Egg', income:85000000, rarity:'divine', guardian:'Kitsune' },
+    { id:'angels', name:'Angels', z:-260, color:0xfde68a, speed:20000000000, egg:'ArchAngel Egg', income:500000000, rarity:'divine', guardian:'ArchAngel' },
+  ];
+
+  const save = {
+    speed: 5000,
+    money: 0,
+    pets: [],
+    carrying: null,
+    tmLevel: 1, // treadmill level 1-10
+  };
+
+  let THREE, renderer, scene, camera, player, carryingMesh, petMesh;
+  let eggs=[], guardians=[], keys={}, joyX=0, joyY=0, animT=0, started=false;
+  let tmMesh=null, penMesh=null, runFx=null;
+  let runFxAcc=0;
+
+  function fmt(n){ return Math.floor(n).toLocaleString(); }
+  function toast(m){
+    const el=document.getElementById('toast');
+    el.textContent=m; el.style.display='block';
+    clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none',2200);
+  }
+  function hud(){
+    document.getElementById('c-speed').textContent = '⚡ '+fmt(save.speed);
+    document.getElementById('c-money').textContent = '💰 $'+fmt(save.money);
+    document.getElementById('c-pets').textContent = '🐣 '+save.pets.length;
+    document.getElementById('c-tm').textContent = '🏋️ Lv.'+save.tmLevel;
+  }
+  function tmInfo(){
+    return TM_UPGRADES[Math.min(save.tmLevel, TM_UPGRADES.length)-1];
+  }
+  function nextTm(){
+    if(save.tmLevel >= TM_UPGRADES.length) return null;
+    return TM_UPGRADES[save.tmLevel]; // next level entry (index = level since 1-based stored differently)
+  }
+  // TM_UPGRADES[0]=lv1, [1]=lv2... so next after current level is TM_UPGRADES[save.tmLevel]
+  function getNextUpgrade(){
+    if(save.tmLevel >= 10) return null;
+    return TM_UPGRADES[save.tmLevel]; // because lv1 is index0, next is index = current level
+  }
+
+  function box(w,h,d,color,y){
+    const m=new THREE.Mesh(
+      new THREE.BoxGeometry(w,h,d),
+      new THREE.MeshStandardMaterial({color, roughness:0.55, metalness:0.12})
+    );
+    m.position.y=y||0; m.castShadow=true; m.receiveShadow=true; return m;
+  }
+
+  function createPlayer(){
+    const g=new THREE.Group();
+    const legL=box(0.28,0.55,0.32,0x1e3a5f,0.35); legL.position.x=-0.18;
+    const legR=box(0.28,0.55,0.32,0x1e3a5f,0.35); legR.position.x=0.18;
+    const body=box(0.72,0.85,0.42,0x3b82f6,1.1);
+    const head=box(0.52,0.52,0.52,0xf5c6a5,1.78);
+    const eyeM=new THREE.MeshStandardMaterial({color:0x111827});
+    const eyeL=new THREE.Mesh(new THREE.BoxGeometry(0.11,0.11,0.08),eyeM); eyeL.position.set(-0.13,1.82,0.26);
+    const eyeR=eyeL.clone(); eyeR.position.x=0.13;
+    const armL=box(0.22,0.6,0.24,0x3b82f6,1.15); armL.position.x=-0.52;
+    const armR=box(0.22,0.6,0.24,0x3b82f6,1.15); armR.position.x=0.52;
+    const hair=box(0.56,0.18,0.56,0xf59e0b,2.08);
+    g.add(legL,legR,body,head,eyeL,eyeR,armL,armR,hair);
+    g.userData={legs:[legL,legR],arms:[armL,armR]};
+    g.position.set(0,0,2); scene.add(g); return g;
+  }
+
+  function createTreadmill(){
+    const tm=new THREE.Group();
+    // base
+    const base=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.28,4.8), new THREE.MeshStandardMaterial({color:0x1e293b, metalness:0.35, roughness:0.4}));
+    base.position.y=0.16; base.castShadow=true; tm.add(base);
+    // belt
+    const belt=new THREE.Mesh(new THREE.BoxGeometry(1.7,0.1,4.0), new THREE.MeshStandardMaterial({color:0x334155, roughness:0.8}));
+    belt.position.set(0,0.3,0.1); tm.add(belt);
+    // Các vạch cao su chạy liên tục để nhìn rõ băng tải đang hoạt động
+    tm.userData.beltMarks=[];
+    for(let i=0;i<8;i++){
+      const mark=new THREE.Mesh(
+        new THREE.BoxGeometry(1.52,0.018,0.055),
+        new THREE.MeshStandardMaterial({color:0x64748b,emissive:0x0f172a,roughness:0.65})
+      );
+      mark.position.set(0,0.36,-1.72+i*0.52);
+      tm.add(mark);
+      tm.userData.beltMarks.push(mark);
+    }
+    // side rails
+    const railL=box(0.1,0.35,4.2,0x0ea5e9,0.45); railL.position.set(-0.95,0.45,0); tm.add(railL);
+    const railR=box(0.1,0.35,4.2,0x0ea5e9,0.45); railR.position.set(0.95,0.45,0); tm.add(railR);
+    // handles
+    const hL=box(0.1,1.15,0.1,0x38bdf8,1.0); hL.position.set(-0.85,1.0,-1.9); tm.add(hL);
+    const hR=box(0.1,1.15,0.1,0x38bdf8,1.0); hR.position.set(0.85,1.0,-1.9); tm.add(hR);
+    const bar=box(1.8,0.1,0.1,0x38bdf8,1.55); bar.position.set(0,1.55,-1.9); tm.add(bar);
+    // console screen
+    const screen=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.55,0.08), new THREE.MeshStandardMaterial({color:0x0f172a, emissive:0x0ea5e9, emissiveIntensity:0.35}));
+    screen.position.set(0,1.65,-1.95); tm.add(screen);
+    // label canvas
+    const cv=document.createElement('canvas'); cv.width=256; cv.height=96;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,256,96);
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 28px Arial'; ctx.textAlign='center';
+    ctx.fillText('TREADMILL',128,40);
+    ctx.fillStyle='#4ade80'; ctx.font='bold 22px Arial';
+    ctx.fillText('LV.'+save.tmLevel,128,72);
+    const lab=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.36), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));
+    lab.position.set(0,1.65,-1.91); tm.add(lab);
+    tm.userData.labelCtx=ctx; tm.userData.labelTex=lab.material.map; tm.userData.labelCanvas=cv;
+
+    // motor box / upgrade lights
+    const motor=box(0.8,0.5,0.6,0x475569,0.45); motor.position.set(0,0.45,2.1); tm.add(motor);
+    for(let i=0;i<5;i++){
+      const led=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.12,0.08), new THREE.MeshStandardMaterial({
+        color: i < Math.ceil(save.tmLevel/2) ? 0x4ade80 : 0x1e293b,
+        emissive: i < Math.ceil(save.tmLevel/2) ? 0x22c55e : 0x000000,
+        emissiveIntensity: 0.6
+      }));
+      led.position.set(-0.3+i*0.15, 0.75, 2.35); tm.add(led);
+      if(!tm.userData.leds) tm.userData.leds=[];
+      tm.userData.leds.push(led);
+    }
+
+    tm.position.set(5,0,5);
+    scene.add(tm);
+    tmMesh=tm;
+    return tm;
+  }
+
+  function refreshTmVisual(){
+    if(!tmMesh) return;
+    const ctx=tmMesh.userData.labelCtx;
+    const cv=tmMesh.userData.labelCanvas;
+    if(ctx){
+      ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,256,96);
+      ctx.fillStyle='#38bdf8'; ctx.font='bold 28px Arial'; ctx.textAlign='center';
+      ctx.fillText('TREADMILL',128,40);
+      ctx.fillStyle='#4ade80'; ctx.font='bold 22px Arial';
+      ctx.fillText('LV.'+save.tmLevel,128,72);
+      if(tmMesh.userData.labelTex) tmMesh.userData.labelTex.needsUpdate=true;
+    }
+    if(tmMesh.userData.leds){
+      tmMesh.userData.leds.forEach((led,i)=>{
+        const on = i < Math.ceil(save.tmLevel/2);
+        led.material.color.setHex(on?0x4ade80:0x1e293b);
+        led.material.emissive.setHex(on?0x22c55e:0x000000);
+      });
+    }
+  }
+
+  function createRunEffects(){
+    runFx=new THREE.Group();
+    const colors=[0x38bdf8,0x67e8f9,0xfde68a];
+    for(let i=0;i<12;i++){
+      const dot=new THREE.Mesh(
+        new THREE.SphereGeometry(0.055+(i%3)*0.018,8,8),
+        new THREE.MeshBasicMaterial({color:colors[i%colors.length],transparent:true,opacity:0.9})
+      );
+      dot.visible=false;
+      runFx.add(dot);
+    }
+    scene.add(runFx);
+  }
+
+  function createPen(){
+    const pen=new THREE.Group();
+    const floor=new THREE.Mesh(new THREE.BoxGeometry(5,0.15,5), new THREE.MeshStandardMaterial({color:0x854d0e, roughness:0.85}));
+    floor.position.y=0.08; floor.receiveShadow=true; pen.add(floor);
+    const fm=new THREE.MeshStandardMaterial({color:0x5c4033});
+    [[0,0.6,2.5,5.2,1.2,0.15],[0,0.6,-2.5,5.2,1.2,0.15],[2.5,0.6,0,0.15,1.2,5.2],[-2.5,0.6,0,0.15,1.2,5.2]].forEach(([x,y,z,w,h,d])=>{
+      const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),fm); f.position.set(x,y,z); pen.add(f);
+    });
+    const nest=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.4,0.35,12), new THREE.MeshStandardMaterial({color:0x6b4226, roughness:1}));
+    nest.position.y=0.25; pen.add(nest);
+    const cv=document.createElement('canvas'); cv.width=256; cv.height=64;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#1a1208'; ctx.fillRect(0,0,256,64);
+    ctx.fillStyle='#fbbf24'; ctx.font='bold 22px Arial'; ctx.textAlign='center';
+    ctx.fillText('🥚 CHUỒNG ẤP',128,40);
+    const lab=new THREE.Mesh(new THREE.PlaneGeometry(3,0.75), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv), transparent:true, side:THREE.DoubleSide}));
+    lab.position.set(0,2.1,0); pen.add(lab);
+    pen.position.set(-5,0,5);
+    scene.add(pen);
+    penMesh=pen;
+  }
+
+  function createMap(){
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(26,320), new THREE.MeshStandardMaterial({color:0x3d8b5a, roughness:0.9}));
+    ground.rotation.x=-Math.PI/2; ground.position.set(0,0,-130); ground.receiveShadow=true; scene.add(ground);
+    BIOMES.forEach((b,i)=>{
+      if(i===0) return;
+      const plane=new THREE.Mesh(new THREE.PlaneGeometry(24,24), new THREE.MeshStandardMaterial({color:b.color, roughness:0.85}));
+      plane.rotation.x=-Math.PI/2; plane.position.set(0,0.03,b.z); plane.receiveShadow=true; scene.add(plane);
+      const c=document.createElement('canvas'); c.width=256; c.height=64;
+      const ctx=c.getContext('2d');
+      ctx.fillStyle='#00000099'; ctx.fillRect(0,0,256,64);
+      ctx.fillStyle='#fff'; ctx.font='bold 26px Arial'; ctx.textAlign='center'; ctx.fillText(b.name,128,40);
+      const label=new THREE.Mesh(new THREE.PlaneGeometry(7,1.7), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c), transparent:true, side:THREE.DoubleSide}));
+      label.position.set(0,3.2,b.z+9); scene.add(label);
+    });
+    const fenceMat=new THREE.MeshStandardMaterial({color:0x5c4033});
+    for(let z=12;z>-275;z-=3.5) for(const x of [-12.5,12.5]){
+      const post=new THREE.Mesh(new THREE.BoxGeometry(0.28,1.5,0.28),fenceMat);
+      post.position.set(x,0.75,z); post.castShadow=true; scene.add(post);
+    }
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(6.5,7,0.4,24), new THREE.MeshStandardMaterial({color:0x86efac, roughness:0.7}));
+    base.position.set(0,0.15,3); base.receiveShadow=true; scene.add(base);
+    createTreadmill();
+    createPen();
+  }
+
+  function createEggMesh(rarity){
+    const g=new THREE.Group();
+    const colors={common:0xf5d0a9,uncommon:0x86efac,rare:0x93c5fd,legendary:0xfbbf24,divine:0xf9a8d4};
+    const body=new THREE.Mesh(new THREE.SphereGeometry(0.42,14,12), new THREE.MeshStandardMaterial({color:colors[rarity]||0xf5d0a9, roughness:0.35, metalness:0.15}));
+    body.scale.set(1,1.28,1); body.castShadow=true; g.add(body);
+    if(rarity==='legendary'||rarity==='divine'){
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(0.55,0.04,8,24), new THREE.MeshStandardMaterial({color:0xfbbf24, emissive:0xf59e0b, emissiveIntensity:0.6}));
+      ring.rotation.x=Math.PI/2; ring.position.y=0.15; g.add(ring);
+    }
+    return g;
+  }
+
+  function spawnEggs(){
+    BIOMES.forEach(b=>{
+      if(!b.egg) return;
+      [[-4,b.z-3],[4,b.z-1],[0,b.z-6]].forEach(([x,z])=>{
+        const egg=createEggMesh(b.rarity); egg.position.set(x,0.55,z);
+        egg.userData={biome:b, collected:false}; scene.add(egg); eggs.push(egg);
+        const nest=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.1,0.35,10), new THREE.MeshStandardMaterial({color:0x6b4226, roughness:1}));
+        nest.position.set(x,0.18,z); nest.receiveShadow=true; scene.add(nest);
+      });
+    });
+  }
+
+  function createGuardian(biome){
+    const g=new THREE.Group(); const type=biome.guardian;
+    if(type==='T-Rex'){
+      g.add(box(1.5,1.4,3.0,0x65a30d,1.1));
+      const head=box(1.2,1.0,1.5,0x84cc16,2.0); head.position.z=1.3; g.add(head);
+    } else if(type==='Cerberus'){
+      g.add(box(1.8,1.2,2.8,0x1f2937,1.0));
+      for(let i=-1;i<=1;i++){
+        const head=box(0.7,0.65,0.9,0x111827,1.7); head.position.set(i*0.55,1.7,1.1); g.add(head);
+      }
+      const fire=new THREE.Mesh(new THREE.ConeGeometry(0.3,0.8,6), new THREE.MeshStandardMaterial({color:0xf97316, emissive:0xea580c, emissiveIntensity:0.8}));
+      fire.position.set(0,2.4,0.2); g.add(fire);
+    } else if(type==='ArchAngel'){
+      g.add(box(1.0,1.6,0.55,0xf8fafc,1.4));
+      g.add(box(0.6,0.6,0.6,0xfde68a,2.4));
+      const wL=box(0.2,1.5,2.2,0xfbbf24,1.7); wL.position.set(-1.0,1.7,-0.3); g.add(wL);
+      const wR=box(0.2,1.5,2.2,0xfbbf24,1.7); wR.position.set(1.0,1.7,-0.3); g.add(wR);
+    } else if(type==='Gorilla'){
+      g.add(box(2.0,1.8,1.5,0x111827,1.4));
+      g.add(box(1.4,1.2,1.3,0x0a0a0a,2.7));
+      const eyeM=new THREE.MeshStandardMaterial({color:0xff0000, emissive:0xff0000, emissiveIntensity:1});
+      const eL=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.15,0.1),eyeM); eL.position.set(-0.35,2.8,0.65); g.add(eL);
+      const eR=eL.clone(); eR.position.x=0.35; g.add(eR);
+      g.add(box(1.2,0.3,1.2,0xfbbf24,3.4));
+    } else if(type==='Whale'){
+      g.add(box(2.2,1.6,4.5,0xf1f5f9,1.2));
+      const head=box(1.8,1.4,1.8,0xe2e8f0,1.3); head.position.z=2.5; g.add(head);
+    } else if(type==='Kitsune'){
+      g.add(box(1.2,0.9,2.2,0xf8fafc,0.8));
+      const head=box(0.9,0.8,0.9,0xf1f5f9,1.6); head.position.z=1.0; g.add(head);
+      g.add(box(0.4,0.4,1.6,0xf9a8d4,0.9)).position.set(0,0.9,-1.6);
+    } else {
+      const col=type==='Chicken'?0xfef3c7:0xa8a29e;
+      g.add(box(1.1,1.0,1.5,col,0.85));
+      const head=box(0.7,0.6,0.7,col,1.55); head.position.z=0.5; g.add(head);
+    }
+    g.position.set(0,0,biome.z+8);
+    g.userData={biome, home:new THREE.Vector3(0,0,biome.z+8), chase:false, speed:5.5+(biome.speed>1e6?3:0)};
+    scene.add(g); guardians.push(g);
+  }
+
+  function spawnPetFollow(){
+    if(petMesh){ scene.remove(petMesh); petMesh=null; }
+    if(!save.pets.length) return;
+    const g=new THREE.Group();
+    g.add(box(0.55,0.45,0.7,0xfbbf24,0.4));
+    const head=box(0.4,0.4,0.4,0xfde68a,0.85); head.position.z=0.25; g.add(head);
+    g.position.copy(player.position); g.position.x-=1.4; scene.add(g); petMesh=g;
+  }
+
+  function buildWorld(){
+    player=createPlayer();
+    createRunEffects();
+    createMap();
+    spawnEggs();
+    BIOMES.forEach(b=>{ if(b.guardian) createGuardian(b); });
+  }
+
+  function doAction(){
+    if(save.carrying){
+      const dx=player.position.x+5, dz=player.position.z-5;
+      if(dx*dx+dz*dz < 14){
+        const egg=save.carrying;
+        save.pets.push({name:egg.name.replace(' Egg',''), income:egg.income, rarity:egg.rarity});
+        save.money += Math.floor(egg.income*6);
+        save.carrying=null;
+        if(carryingMesh){ player.remove(carryingMesh); carryingMesh=null; }
+        guardians.forEach(g=>g.userData.chase=false);
+        spawnPetFollow();
+        toast('✨ Ấp thành công '+egg.name+'!');
+        hud();
+      } else if(player.position.z>-8){
+        toast('Mang trứng vào CHUỒNG ẤP (trái Base) rồi nhấn E');
+      } else {
+        toast('Về Base → vào Chuồng ấp!');
+      }
+      return;
+    }
+    const px=player.position.x, pz=player.position.z;
+    let nearest=null, best=999;
+    for(const egg of eggs){
+      if(egg.userData.collected) continue;
+      const d=Math.hypot(egg.position.x-px, egg.position.z-pz);
+      if(d<best && d<2.8){ best=d; nearest=egg; }
+    }
+    if(!nearest){ toast('Không có trứng gần đây'); return; }
+    const b=nearest.userData.biome;
+    if(save.speed < b.speed){ toast('Cần '+fmt(b.speed)+' Speed ở '+b.name); return; }
+    nearest.userData.collected=true; nearest.visible=false;
+    save.carrying={name:b.egg, income:b.income, rarity:b.rarity};
+    if(carryingMesh) player.remove(carryingMesh);
+    carryingMesh=createEggMesh(b.rarity); carryingMesh.scale.setScalar(0.65);
+    player.add(carryingMesh); carryingMesh.position.set(0,2.15,0.45);
+    guardians.forEach(g=>{ if(g.userData.biome.id===b.id) g.userData.chase=true; });
+    toast('🥚 Cướp '+b.egg+'! Chạy về Base!');
+  }
+
+  function upgradeTreadmill(){
+    const next = getNextUpgrade();
+    if(!next){ toast('Máy đã max level 10!'); return; }
+    if(save.money < next.cost){ toast('Cần $'+fmt(next.cost)+' để nâng Lv.'+(save.tmLevel+1)); return; }
+    save.money -= next.cost;
+    save.tmLevel += 1;
+    refreshTmVisual();
+    hud();
+    toast('🏋️ Nâng cấp máy → Lv.'+save.tmLevel+' (+'+fmt(tmInfo().gain)+' Speed/tick)');
+    openUpgradePanel();
+  }
+
+  function openUpgradePanel(){
+    const body=document.getElementById('p-body');
+    document.getElementById('p-title').textContent='🏋️ Nâng cấp máy chạy bộ';
+    const cur=tmInfo();
+    const next=getNextUpgrade();
+    let html = '<div class="row"><span>Level hiện tại</span><b>Lv.'+save.tmLevel+'</b></div>';
+    html += '<div class="row"><span>Speed mỗi tick</span><b>+'+fmt(cur.gain)+'</b></div>';
+    html += '<div class="row"><span>Tiền của bạn</span><b>$'+fmt(save.money)+'</b></div>';
+    if(next){
+      html += '<div class="row"><span>Nâng lên Lv.'+(save.tmLevel+1)+'</span><b>+'+fmt(next.gain)+'/tick</b></div>';
+      html += '<div class="row"><span>Giá nâng cấp</span><b>$'+fmt(next.cost)+'</b></div>';
+      const can = save.money >= next.cost;
+      html += '<div style="margin-top:12px"><button class="upg" id="do-upg" '+(can?'':'disabled')+'>'+(can?'⬆️ Nâng cấp ngay':'Không đủ tiền')+'</button></div>';
+    } else {
+      html += '<div class="row" style="color:#4ade80"><span>MAX LEVEL</span><b>Lv.10</b></div>';
+    }
+    html += '<p style="margin-top:12px;opacity:.8;font-size:12px;line-height:1.4">Đứng lên máy chạy bộ (phải Base) để tự tăng Speed. Level càng cao tăng càng nhanh.</p>';
+    body.innerHTML = html;
+    document.getElementById('panel').style.display='block';
+    const btn=document.getElementById('do-upg');
+    if(btn) btn.onclick=upgradeTreadmill;
+  }
+
+  function openPetsPanel(){
+    const body=document.getElementById('p-body');
+    document.getElementById('p-title').textContent='🐣 Pets';
+    if(!save.pets.length){
+      body.innerHTML='<div style="opacity:.8">Chưa có pet. Cướp trứng → Chuồng ấp.</div>';
+    } else {
+      let total=0, html='';
+      save.pets.forEach(p=>{ total+=p.income; html+='<div class="row"><span>'+p.name+'</span><span>$'+fmt(p.income)+'/s</span></div>'; });
+      html+='<div class="row" style="color:#4ade80;font-weight:800"><span>Tổng</span><span>$'+fmt(total)+'/s</span></div>';
+      body.innerHTML=html;
+    }
+    document.getElementById('panel').style.display='block';
+  }
+
+  // controls
+  window.addEventListener('keydown', e=>{ keys[e.code]=true; if(e.code==='KeyE') doAction(); });
+  window.addEventListener('keyup', e=>{ keys[e.code]=false; });
+  const joy=document.getElementById('joy'), knob=document.getElementById('joy-knob');
+  let joyId=null;
+  function setJoy(x,y){
+    const max=36, len=Math.hypot(x,y)||1;
+    if(len>max){ x=x/len*max; y=y/len*max; }
+    knob.style.left=(37+x)+'px'; knob.style.top=(37+y)+'px';
+    joyX=x/max; joyY=y/max;
+  }
+  joy.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.changedTouches[0]; joyId=t.identifier; const r=joy.getBoundingClientRect(); setJoy(t.clientX-r.left-65, t.clientY-r.top-65); }, {passive:false});
+  joy.addEventListener('touchmove', e=>{ e.preventDefault(); for(const t of e.changedTouches) if(t.identifier===joyId){ const r=joy.getBoundingClientRect(); setJoy(t.clientX-r.left-65, t.clientY-r.top-65);} }, {passive:false});
+  function endJoy(e){ for(const t of e.changedTouches) if(t.identifier===joyId){ joyId=null; setJoy(0,0);} }
+  joy.addEventListener('touchend', endJoy); joy.addEventListener('touchcancel', endJoy);
+
+  document.getElementById('btn-act').onclick=doAction;
+  document.getElementById('btn-tm').onclick=()=>{ player.position.set(5,0,5); toast('Đứng trên máy để tăng Speed!'); };
+  document.getElementById('btn-base').onclick=()=>{ player.position.set(0,0,3); toast('Về Base'); };
+  document.getElementById('btn-upg').onclick=openUpgradePanel;
+  document.getElementById('btn-pets').onclick=openPetsPanel;
+  document.getElementById('p-close').onclick=()=>{ document.getElementById('panel').style.display='none'; };
+
+  let tmAcc=0, incomeAcc=0, last=0;
+
+  function updatePlayer(dt){
+    let mx=0,mz=0;
+    if(keys['KeyW']||keys['ArrowUp']) mz-=1;
+    if(keys['KeyS']||keys['ArrowDown']) mz+=1;
+    if(keys['KeyA']||keys['ArrowLeft']) mx-=1;
+    if(keys['KeyD']||keys['ArrowRight']) mx+=1;
+    mx+=joyX; mz+=joyY;
+    const len=Math.hypot(mx,mz);
+    const onTm = (player.position.x-5)**2 + (player.position.z-5)**2 < 6;
+
+    if(len>0.08){
+      mx/=len; mz/=len;
+      const sprint=(keys['ShiftLeft']||keys['ShiftRight'])?1.55:1;
+      const slow=save.carrying?0.72:1;
+      const mul=0.75+Math.min(save.speed/80000, 2.2);
+      const speed=6.8*sprint*mul*slow;
+      player.position.x+=mx*speed*dt;
+      player.position.z+=mz*speed*dt;
+      player.rotation.y=Math.atan2(mx,mz);
+    }
+
+    // Chạy bộ có chuyển động toàn thân: tay/chân vung ngược chiều và thân nhún nhẹ.
+    const running = len>0.08 || onTm;
+    const legs=player.userData.legs, arms=player.userData.arms;
+    const body=player.children[2];
+    const runRate=onTm?15:13;
+    if(running){
+      const swing=Math.sin(animT*runRate)*0.62;
+      if(legs){ legs[0].rotation.x=swing; legs[1].rotation.x=-swing; }
+      if(arms){ arms[0].rotation.x=-swing*0.72; arms[1].rotation.x=swing*0.72; }
+      player.position.y=onTm?0.035+Math.abs(Math.sin(animT*runRate*2))*0.045:
+        Math.abs(Math.sin(animT*runRate*2))*0.075;
+      if(body) body.rotation.x=Math.sin(animT*runRate*2)*0.035;
+    } else {
+      if(legs){ legs[0].rotation.x*=0.82; legs[1].rotation.x*=0.82; }
+      if(arms){ arms[0].rotation.x*=0.82; arms[1].rotation.x*=0.82; }
+      player.position.y*=0.75;
+      if(body) body.rotation.x*=0.8;
+    }
+
+    // Treadmill auto train
+    if(onTm){
+      tmAcc+=dt;
+      if(tmAcc>0.4){
+        tmAcc=0;
+        const gain=tmInfo().gain + Math.floor(Math.random()*tmInfo().gain*0.2);
+        save.speed+=gain;
+        hud();
+        if(Math.random()<0.35) toast('⚡ +'+fmt(gain)+' Speed (Lv.'+save.tmLevel+')');
+      }
+    }
+
+    player.position.x=Math.max(-11,Math.min(11,player.position.x));
+    player.position.z=Math.max(-265,Math.min(12,player.position.z));
+
+    // Vạch băng tải trượt ngược chiều chân chạy.
+    if(tmMesh && tmMesh.userData.beltMarks){
+      tmMesh.userData.beltMarks.forEach(mark=>{
+        mark.position.z+=dt*3.8;
+        if(mark.position.z>2.0) mark.position.z=-2.0;
+      });
+    }
+
+    // Hạt sáng/tia tốc độ xuất hiện quanh chân khi đang tập máy.
+    if(runFx){
+      runFx.position.set(player.position.x,0.42,player.position.z);
+      runFx.visible=onTm;
+      if(onTm){
+        runFxAcc+=dt;
+        runFx.children.forEach((dot,i)=>{
+          const phase=animT*5+i*0.72;
+          dot.position.set(Math.sin(phase)*0.8,Math.abs(Math.sin(phase*1.7))*0.9,Math.cos(phase)*1.45);
+          dot.material.opacity=0.35+Math.abs(Math.sin(phase))*0.6;
+        });
+      }
+    }
+  }
+
+  function updateGuardians(dt){
+    guardians.forEach(g=>{
+      if(g.userData.chase && save.carrying){
+        const dx=player.position.x-g.position.x, dz=player.position.z-g.position.z;
+        const dist=Math.hypot(dx,dz)||1;
+        g.position.x+=(dx/dist)*g.userData.speed*dt;
+        g.position.z+=(dz/dist)*g.userData.speed*dt;
+        g.lookAt(player.position.x,0,player.position.z);
+        if(dist<2){
+          toast('💀 Guardian bắt được! Mất trứng');
+          save.carrying=null;
+          if(carryingMesh){ player.remove(carryingMesh); carryingMesh=null; }
+          g.userData.chase=false; g.position.copy(g.userData.home);
+        }
+      } else g.position.lerp(g.userData.home, 3*dt);
+    });
+  }
+
+  function updatePet(dt){
+    if(!petMesh) return;
+    const t=new THREE.Vector3(player.position.x-Math.sin(player.rotation.y)*1.5, 0, player.position.z-Math.cos(player.rotation.y)*1.5);
+    petMesh.position.lerp(t, 1-Math.pow(0.04,dt));
+    petMesh.lookAt(player.position.x,0.3,player.position.z);
+  }
+
+  function updateCamera(dt){
+    camera.position.x+=(player.position.x-camera.position.x)*5*dt;
+    camera.position.z+=(player.position.z+10-camera.position.z)*5*dt;
+    camera.position.y+=(7-camera.position.y)*5*dt;
+    camera.lookAt(player.position.x, player.position.y+1.5, player.position.z);
+  }
+
+  function updatePrompt(){
+    const el=document.getElementById('prompt');
+    if(save.carrying){
+      el.style.display='block';
+      el.textContent='Đang cầm '+save.carrying.name+' — vào CHUỒNG ẤP rồi nhấn E';
+      return;
+    }
+    const onTm=(player.position.x-5)**2+(player.position.z-5)**2<6;
+    if(onTm){
+      el.style.display='block';
+      el.textContent='🏃 ĐANG CHẠY · Lv.'+save.tmLevel+' · +'+fmt(tmInfo().gain)+'/tick · Bấm Nâng cấp để tăng';
+      return;
+    }
+    const px=player.position.x,pz=player.position.z;
+    let near=false;
+    for(const egg of eggs){
+      if(egg.userData.collected) continue;
+      if(Math.hypot(egg.position.x-px,egg.position.z-pz)<3.2){ near=true; break; }
+    }
+    el.style.display=near?'block':'none';
+    if(near) el.textContent='Nhấn E / nút 🥚 để cướp trứng';
+  }
+
+  function animate(now){
+    const dt=Math.min((now-last)/1000,0.05); last=now; animT+=dt;
+    updatePlayer(dt); updateGuardians(dt); updatePet(dt); updateCamera(dt); updatePrompt();
+    incomeAcc+=dt;
+    if(incomeAcc>1.2 && save.pets.length){
+      incomeAcc=0;
+      const total=save.pets.reduce((s,p)=>s+p.income,0);
+      save.money+=Math.max(1,Math.floor(total*0.4));
+      hud();
+    }
+    eggs.forEach(e=>{ if(!e.userData.collected) e.position.y=0.55+Math.sin(animT*2+e.position.x)*0.06; });
+    renderer.render(scene,camera);
+    requestAnimationFrame(animate);
+  }
+
+  function startGame(){
+    if(started) return;
+    showErr('Đang tải...');
+    loadThree(function(ok){
+      if(!ok || !window.THREE){
+        showErr('Không tải được 3D. Mở file bằng Chrome (cần mạng lần đầu).');
+        return;
+      }
+      try{
+        THREE=window.THREE;
+        const canvas=document.getElementById('c');
+        const IS_TOUCH=matchMedia('(pointer:coarse)').matches||innerWidth<900;
+        renderer=new THREE.WebGLRenderer({canvas, antialias:!IS_TOUCH});
+        renderer.setPixelRatio(Math.min(devicePixelRatio||1, IS_TOUCH?1.25:2));
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.shadowMap.enabled=true;
+        scene=new THREE.Scene();
+        scene.background=new THREE.Color(0x87b8e0);
+        scene.fog=new THREE.Fog(0x87b8e0,35,110);
+        camera=new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 180);
+        scene.add(new THREE.HemisphereLight(0xb1e1ff,0x8b5a2b,0.75));
+        const sun=new THREE.DirectionalLight(0xfff4e0,1.15);
+        sun.position.set(25,45,15); sun.castShadow=true; scene.add(sun);
+        buildWorld();
+        started=true;
+        document.getElementById('start').style.display='none';
+        showErr('');
+        hud();
+        toast('Chào mừng! Đứng máy chạy bộ để tăng Speed');
+        last=performance.now();
+        requestAnimationFrame(animate);
+      }catch(e){
+        console.error(e);
+        showErr('Lỗi: '+(e.message||e));
+      }
+    });
+  }
+
+  const playBtn=document.getElementById('play');
+  playBtn.onclick=startGame;
+  playBtn.addEventListener('touchend', e=>{ e.preventDefault(); startGame(); }, {passive:false});
+  window.addEventListener('resize', ()=>{
+    if(!camera||!renderer) return;
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+})();
+</script>
+</body>
+</html>
